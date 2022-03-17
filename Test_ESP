@@ -1,0 +1,125 @@
+
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+
+#define ADR_POST "http://httpbin.org/post"
+#define ADR_GET "http://httpbin.org/headers"
+#ifndef STASSID
+#define STASSID "HUAWEI Y7"
+#define STAPSK "12345678"
+#endif
+int httpCode;
+String ans;
+void setup() 
+{
+  Serial.begin(9600);
+  WiFi.begin(STASSID, STAPSK);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.print("Connected to WI-FI!\n");
+
+  Serial.print("Choose reques:\n");
+  Serial.print("1-GET http://httpbin.org/headers\n2-POST http://httpbin.org/post\n");
+}
+
+void loop() {
+  // wait for WiFi connection
+  if (Serial.available() > 0) {
+    ans = Serial.read();
+
+    if (ans == "1") {
+      GET_REQ();
+    }
+
+    if (ans == "2") {
+      POST_REQ();
+    }
+  }
+}
+
+
+
+void GET_REQ() {
+
+  if ((WiFi.status() == WL_CONNECTED)) {
+
+    WiFiClient client;
+    HTTPClient http;
+    Serial.print("[HTTP] begin...\n");
+
+    if (http.begin(client, "http://httpbin.org/")) {
+
+
+      Serial.print("[HTTP] GET...\n");
+      // start connection and send HTTP header
+      int httpCode = http.GET();
+
+      if (httpCode > 0) {
+        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+          String payload = http.getString();
+          Serial.println(payload);
+        }
+      } else {
+        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+      }
+
+      http.end();
+    } else {
+      Serial.printf("[HTTP} Unable to connect\n");
+    }
+  }
+
+  delay(20);
+
+
+  Serial.print("Choose reques:\n");
+  Serial.print("1-GET http://httpbin.org/headers\n2-POST http://httpbin.org/post\n");
+}
+
+void POST_REQ() {
+
+  if ((WiFi.status() == WL_CONNECTED)) {
+
+    WiFiClient client;
+    HTTPClient http;
+
+    Serial.print("[HTTP] begin...\n");
+    // configure traged server and url
+    http.begin(client, "http://httpbin.org/post");  //HTTP
+    http.addHeader("Content-Type", "application/json");
+
+    Serial.print("[HTTP] POST...\n");
+    // start connection and send HTTP header and body
+    int httpCode = http.POST("");
+
+    // httpCode will be negative on error
+    if (httpCode > 0) {
+      // HTTP header has been send and Server response header has been handled
+      Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK) {
+        const String& payload = http.getString();
+        Serial.println("received payload:\n<<");
+        Serial.println(payload);
+        Serial.println(">>");
+      }
+    } else {
+      Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
+    }
+
+    http.end();
+  }
+
+  delay(20);
+
+
+
+  Serial.print("Choose reques:\n");
+  Serial.print("1-GET http://httpbin.org/headers\n2-POST http://httpbin.org/post\n");
+}
